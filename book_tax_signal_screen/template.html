@@ -1,0 +1,259 @@
+<title>Book–Tax Signal Screen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single working column; search on top, selected company file, then ranked list and method notes */
+:root{
+  --bg:#f5f7f8; --surface:#ffffff; --line:#d8dee3; --fg:#17212b; --muted:#56636f;
+  --accent:#1f4e79; --accent-soft:#e3ecf5; --warn:#a15c00; --warn-soft:#fbefdc; --hot:#a8261c; --hot-soft:#f9e3e0; --ok:#2e6b48; --ok-soft:#e2f0e7;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1519; --surface:#172027; --line:#2b3741; --fg:#e4eaef; --muted:#9aa8b4;
+  --accent:#8fb6dc; --accent-soft:#1c2d3d; --warn:#e3a54f; --warn-soft:#33270f; --hot:#ef8a7f; --hot-soft:#3a1d1a; --ok:#86c7a0; --ok-soft:#173025; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --surface:#172027; --line:#2b3741; --fg:#e4eaef; --muted:#9aa8b4;
+  --accent:#8fb6dc; --accent-soft:#1c2d3d; --warn:#e3a54f; --warn-soft:#33270f; --hot:#ef8a7f; --hot-soft:#3a1d1a; --ok:#86c7a0; --ok-soft:#173025; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:860px;margin:0 auto;display:grid;gap:28px}
+header{display:grid;gap:6px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:30px;line-height:1.15;margin:0;font-weight:700;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:18px;margin:0;font-weight:650;text-wrap:balance}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+.notice{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:12px 14px;font-size:13.5px;color:var(--muted)}
+.notice b{color:var(--fg)}
+.search{position:relative}
+.search label{display:block;font-weight:600;margin-bottom:6px}
+.search input{width:100%;font:16px var(--sans);padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.search input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.sugg{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--surface);border:1px solid var(--line);border-radius:6px;z-index:5;max-height:320px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.sugg button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;background:none;border:0;padding:9px 14px;font:14px var(--sans);color:var(--fg);cursor:pointer}
+.sugg button:hover,.sugg button:focus{background:var(--accent-soft);outline:none}
+.sugg small{font-family:var(--mono);color:var(--muted)}
+.file{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px;display:grid;gap:20px}
+.filehead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-start}
+.filehead > div{min-width:0}
+.meta{font:13px var(--mono);color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px}
+.meta a{color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:14px;white-space:nowrap}
+.b-hot{background:var(--hot-soft);color:var(--hot)} .b-warn{background:var(--warn-soft);color:var(--warn)} .b-ok{background:var(--ok-soft);color:var(--ok)}
+.scale{display:grid;gap:6px}
+.bar{position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--ok-soft) 0 70%,var(--warn-soft) 70% 90%,var(--hot-soft) 90% 100%);border:1px solid var(--line)}
+.pin{position:absolute;top:-5px;width:4px;height:20px;border-radius:2px;background:var(--fg);transform:translateX(-2px)}
+.ticks{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted)}
+.big{font:600 34px/1 var(--mono);font-variant-numeric:tabular-nums}
+.big small{font:500 14px var(--sans);color:var(--muted);margin-left:6px}
+.reasons{display:grid;gap:10px}
+.reason{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.reason:first-of-type{border-top:0}
+.dir{font:600 12px/1 var(--mono);padding:5px 7px;border-radius:4px;align-self:start;margin-top:2px}
+.dir.up{background:var(--warn-soft);color:var(--warn)} .dir.dn{background:var(--ok-soft);color:var(--ok)}
+.reason .what{font-weight:600}
+.reason .why{grid-column:2;color:var(--muted);font-size:14px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sec{display:grid;gap:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font:13px var(--sans);padding:6px 10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:4px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer} tbody tr:hover{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.fact{border-top:2px solid var(--accent);padding-top:8px}
+.fact .k{font:600 22px var(--mono);font-variant-numeric:tabular-nums}
+.fact .l{font-size:13px;color:var(--muted)}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600}
+details p,details ul{margin-top:10px;color:var(--muted);font-size:14px;max-width:72ch}
+footer{font-size:12.5px;color:var(--muted)}
+.hist{display:grid;gap:8px}
+.hist svg{width:100%;max-width:520px;height:auto;display:block}
+.hist .cap{font-size:13px;color:var(--muted)}
+.bt{border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:10px;background:var(--bg)}
+.bt .row{display:grid;grid-template-columns:1fr auto;gap:2px 16px;align-items:baseline}
+.bt .row .v{font:600 15px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.bt .row .d{grid-column:1 / -1;font-size:13px;color:var(--muted)}
+.bt .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.cmp td:first-child{white-space:normal}
+.cmp tr.me td{font-weight:600}
+.cmp tbody tr{cursor:default}
+@media (max-width:520px){h1{font-size:24px}.file{padding:16px}.big{font-size:28px}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Research prototype · SEC 10-K filings · fiscal 2023–2024</div>
+  <h1>Book–Tax Signal Screen</h1>
+  <p class="lede">Type a US-listed company. The screen ranks its latest annual report against companies of similar size and shows the reported numbers that moved its rank most.</p>
+</header>
+
+<div class="notice"><b>This is a screening aid, not an allegation.</b> A high rank means the company's reported numbers resemble those of companies the SEC later charged with misstating accounts. Most highly ranked companies have done nothing wrong. Use it to decide where to look first.</div>
+
+<div class="search">
+  <label for="q">Company name</label>
+  <input id="q" type="search" autocomplete="off" placeholder="e.g. Apple Inc, Super Micro, Kraft Heinz">
+  <div class="sugg" id="sugg" hidden></div>
+</div>
+
+<section class="file" id="file" aria-live="polite"></section>
+
+<section class="sec">
+  <h2>Highest ranked in each size band</h2>
+  <p class="lede">Ten highest-ranked companies within the size band you pick. Select a row to open it.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="tablewrap"><table><thead><tr><th>Company</th><th class="r">Fiscal year</th><th class="r">Total assets</th><th class="r">Rank in band</th></tr></thead><tbody id="tb"></tbody></table></div>
+</section>
+
+<section class="sec">
+  <h2>How well it works</h2>
+  <div class="facts" id="facts"></div>
+  <p class="lede">Each year from 2015 to 2020, the model was trained only on earlier years and then asked to rank that year's filings. The figures compare its ranking with the misstatements the SEC later announced. With only 81 cases in these years, differences of a few points can be luck. It misses many cases and flags many clean companies.</p>
+  <details>
+    <summary>Method</summary>
+    <ul>
+      <li>Data: SEC Financial Statement Data Sets (XBRL), annual 10-K filings, fiscal 2009–2024; companies with at least $10 million in total assets.</li>
+      <li>Labels: SEC Accounting and Auditing Enforcement Releases, matched to the fiscal years each case says were misstated.</li>
+      <li>Score: RUSBoost ensemble (300 trees, three random seeds) on 27 reported line items, 19 ratios including tax signals (book–tax gap, effective tax rate, cash taxes paid, tax–earnings growth gap), the Beneish M-score indexes and industry.</li>
+      <li>Reasons: a separate tree model trained to reproduce the scores from the readable ratios alone (it reproduces 75% of the variation on held-out companies), explained with SHAP values. Reasons describe what drove the score, not proof of anything.</li>
+      <li>Size: raw scores rise with company size because enforcement cases skew toward large companies, so the rank compares each company only with the tenth of companies closest to it in total assets.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Limits</summary>
+    <ul>
+      <li>Enforcement cases take years to surface, so recent years have few labels and the model learns mostly from 2009–2018 cases.</li>
+      <li>XBRL data covers the main statements only, not footnotes; some tax items are missing for many companies.</li>
+      <li>Companies with a past SEC case are part of the training data.</li>
+      <li>Banks, insurers and funds report differently; ranks for them are less meaningful.</li>
+    </ul>
+  </details>
+</section>
+
+<footer>Book–Tax Signal Screen is a research prototype by Pelumi K. Bello, based on her working paper "Do Tax Signals Improve Machine-Learning Detection of Accounting Fraud?" (P. K. Bello). Source data: U.S. Securities and Exchange Commission. Not investment, audit or legal advice.</footer>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const J = JSON.parse(document.getElementById('data').textContent);
+const F = J.firms;
+const $ = s => document.querySelector(s);
+const pct = v => (v*100).toFixed(1).replace(/\.0$/,'') + '%';
+const money = m => m >= 1000 ? '$' + (m/1000).toLocaleString(undefined,{maximumFractionDigits:1}) + 'bn' : '$' + m.toLocaleString(undefined,{maximumFractionDigits:0}) + 'm';
+const ord = n => n + (['th','st','nd','rd'][(n%100-20)%10] || ['th','st','nd','rd'][n%100] || 'th');
+const peer = p => p == null ? '' : ` Higher than ${Math.min(p,99)}% of companies.`;
+const T = {
+  gross_margin:[v=>`Gross margin of ${pct(v)}`, 'Unusually high or low margins were common among companies later charged; margins can be inflated by booking revenue early or deferring costs.'],
+  soft_assets:[v=>`${pct(v)} of assets are “soft” (not cash or property)`, 'Receivables, inventory, intangibles and other judgment-based assets give management more room to adjust reported values.'],
+  d_rec:[v=>`Receivables changed by ${pct(v)} of assets during the year`, 'Receivables growing faster than the business can signal sales booked before cash is collected.'],
+  d_inv:[v=>`Inventory changed by ${pct(v)} of assets during the year`, 'Rapid inventory build-ups can hide unsold or overvalued stock.'],
+  leverage:[v=>`Liabilities equal ${pct(v)} of assets`, 'Debt covenants and financing needs raise the pressure to report strong results.'],
+  btd:[v=>`Book–tax gap of ${pct(v)} of assets`, 'Compares reported pre-tax profit with the profit implied by the tax expense. A large gap means book profit is out of line with taxes.'],
+  tax_earn_gap:[v=>`Tax–earnings growth gap of ${pct(v)} of assets`, 'Book profit grew by a different amount than tax expense implies. In the underlying paper, this gap separated charged companies from others.'],
+  etr:[v=>`Effective tax rate of ${pct(v)}`, 'Tax expense as a share of pre-tax profit, compared with what is typical.'],
+  cash_etr:[v=>`Cash taxes paid equal ${pct(v)} of pre-tax profit`, 'Cash taxes are harder to adjust than book tax expense, so a mismatch with reported profit is informative.'],
+  d_tax_payable:[v=>`Taxes payable changed by ${pct(v)} of assets`, 'Shifts in taxes owed relative to the size of the company.'],
+  issued_equity:[v=>v ? 'Issued new shares during the year' : 'Did not issue new shares', 'Companies raising capital have a stronger incentive to present good results.'],
+  issued_debt:[v=>v ? 'Issued long-term debt during the year' : 'Did not issue long-term debt', 'Companies raising capital have a stronger incentive to present good results.'],
+  sales_growth:[v=>`Sales changed by ${pct(v)}`, 'Fast growth is linked to pressure to keep up the pace.'],
+  d_cash_sales:[v=>`Cash sales changed by ${pct(v)}`, 'Sales actually collected in cash, compared with reported sales growth.'],
+  roa:[v=>`Return on assets of ${pct(v)}`, 'Profitability relative to the asset base.'],
+  d_roa:[v=>`Return on assets changed by ${(v*100).toFixed(1)} points`, 'A sharp change in profitability from one year to the next.'],
+  wc_accruals:[v=>`Working-capital accruals of ${pct(v)} of assets`, 'Profit recorded without matching cash, the classic accrual warning sign.'],
+  dsri:[v=>`Receivables-to-sales ratio is ${v.toFixed(2)}× last year's`, 'Beneish index: receivables rising faster than sales can mean revenue booked early.'],
+  gmi:[v=>`Gross margin index of ${v.toFixed(2)} (last year's margin ÷ this year's)`, 'Beneish index: a value above 1 means margins fell, which raises the pressure to manage results.'],
+  aqi:[v=>`Asset quality index of ${v.toFixed(2)}`, 'Beneish index: growth in assets other than current assets and property, such as capitalized costs, compared with last year.'],
+  sgi:[v=>`Sales growth index of ${v.toFixed(2)}`, 'Beneish index: sales this year divided by sales last year. Fast growth adds pressure to keep it up.'],
+  depi:[v=>`Depreciation index of ${v.toFixed(2)}`, 'Beneish index: a value above 1 means the depreciation rate fell, which raises reported profit.'],
+  lvgi:[v=>`Leverage index of ${v.toFixed(2)}`, 'Beneish index: liabilities-to-assets compared with last year. Rising leverage can tighten debt covenants.'],
+  profit_low_tax:[v=>v ? 'Profitable but reported no tax expense' : 'Reported tax expense in line with profit', 'Profit with no tax charge can mean losses carried forward, or profit that the tax return does not show.'],
+};
+function band(sp){ return sp >= 90 ? ['b-hot','Top 10% of size band'] : sp >= 70 ? ['b-warn','Above typical'] : ['b-ok','Typical range']; }
+function reason(r, up){
+  const [k,v,p] = r; const t = T[k]; if(!t) return '';
+  const what = v == null ? t[0](0).replace(/ of 0%| 0%/,'') + ' (not reported)' : t[0](v);
+  return `<div class="reason"><span class="dir ${up?'up':'dn'}">${up?'RAISES':'LOWERS'}</span><div class="what">${what}</div><div class="why">${t[1]}${peer(p)}</div></div>`;
+}
+function btBox(f){
+  const [b, bp, g, gp] = f.bt || [];
+  const val = (v, p) => v == null ? '<span class="v">Not available</span>' : `<span class="v">${(v*100).toFixed(1)}% of assets</span>`;
+  const peerTxt = p => p == null ? '' : ` Higher than ${Math.min(p,99)}% of companies.`;
+  return `<div class="bt"><h2>Book–tax check</h2>
+    <div class="row"><span><b>Book–tax gap</b></span>${val(b, bp)}<span class="d">Pre-tax book profit minus the taxable income implied by its tax expense at the 21% federal rate.${peerTxt(bp)}</span></div>
+    <div class="row"><span><b>Tax–earnings growth gap</b></span>${val(g, gp)}<span class="d">This year's change in book profit minus the change in implied taxable income. Below zero means taxable income grew faster than book profit.${peerTxt(gp)}</span></div>
+    <div class="note">In the underlying research, companies the SEC later charged tended to show <b>smaller</b> book–tax gaps and taxable income growing <b>faster</b> than book profit: they recorded tax on inflated profit as if it were real. A large gap more often reflects tax planning, credits or past losses. These measures alone did not improve prediction, so read them as context, not a verdict.</div></div>`;
+}
+function histSvg(f){
+  const yrs = [2019,2020,2021,2022,2023,2024]; const W = 520, H = 160, L = 34, B = 26, T = 20;
+  const bw = (W - L - 8) / yrs.length;
+  const y = v => T + (H - T - B) * (1 - v/100);
+  let g = '';
+  [0,50,90].forEach(v => { g += `<line x1="${L}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-dasharray="${v===90?'4 3':'0'}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--mono)">${v}</text>`; });
+  yrs.forEach((yr,i) => {
+    const v = f.h[yr]; const x = L + i*bw + bw*0.2, w = bw*0.6;
+    if (v != null) { const c = v >= 90 ? 'var(--hot)' : v >= 70 ? 'var(--warn)' : 'var(--accent)';
+      g += `<rect x="${x}" y="${y(v)}" width="${w}" height="${y(0)-y(v)}" rx="2" fill="${c}"><title>${yr}: ${ord(v)} percentile</title></rect><text x="${x+w/2}" y="${y(v)-4}" text-anchor="middle" font-size="11" fill="var(--fg)" font-family="var(--mono)">${v}</text>`; }
+    else g += `<text x="${x+w/2}" y="${y(0)-6}" text-anchor="middle" font-size="11" fill="var(--muted)">n/a</text>`;
+    g += `<text x="${x+w/2}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--mono)">${yr}</text>`;
+  });
+  return `<div class="hist"><h2>Rank by fiscal year</h2><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rank history">${g}</svg><div class="cap">Each year is scored by a model trained only on earlier years, so past ranks are what the screen would have shown at the time. Dashed line: 90th percentile.</div></div>`;
+}
+function show(f){
+  f.sp = Math.min(f.sp, 99);
+  const [cls,lab] = band(f.sp);
+  const edgar = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(f.c).padStart(10,'0')}&type=10-K`;
+  $('#file').innerHTML = `
+    <div class="filehead"><div><h2 style="font-size:22px">${f.n}</h2>
+      <div class="meta"><span>Form 10-K · fiscal ${f.fy}</span><span>CIK ${f.c}</span><span>Total assets ${money(f.at)}</span><span>${f.ind}${f.sic ? " · SIC " + f.sic : ""}</span><a href="${edgar}" target="_blank" rel="noopener">Filings on EDGAR ↗</a></div></div>
+      <span class="badge ${cls}">${lab}</span></div>
+    <div class="scale"><div class="big">${ord(f.sp)}<small>percentile among similar-size companies</small></div>
+      <div class="bar" role="img" aria-label="${ord(f.sp)} percentile"><span class="pin" style="left:${f.sp}%"></span></div>
+      <div class="ticks"><span>0</span><span>70</span><span>90</span><span>100</span></div></div>
+    ${histSvg(f)}
+    ${btBox(f)}
+    <div class="reasons"><h2>What moved the rank</h2>${f.up.map(r=>reason(r,true)).join('')}${f.dn.map(r=>reason(r,false)).join('')}</div>`;
+}
+// search
+const q = $('#q'), sg = $('#sugg');
+const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,'');
+F.forEach(f => f._k = norm(f.n));
+q.addEventListener('input', () => {
+  const t = norm(q.value.trim()); if(t.length < 2){ sg.hidden = true; return; }
+  const hits = F.filter(f => f._k.includes(t)).sort((a,b) => (a._k.startsWith(t)?0:1)-(b._k.startsWith(t)?0:1) || b.at-a.at).slice(0,12);
+  sg.innerHTML = hits.length ? hits.map(f => `<button type="button" data-c="${f.c}">${f.n}<small>${money(f.at)}</small></button>`).join('') : '<button type="button" disabled>No match. This covers companies filing a 10-K for fiscal 2023 or 2024.</button>';
+  sg.hidden = false;
+});
+sg.addEventListener('click', e => { const b = e.target.closest('button[data-c]'); if(!b) return; pick(+b.dataset.c); });
+q.addEventListener('keydown', e => { if(e.key === 'Enter'){ const b = sg.querySelector('button[data-c]'); if(b) pick(+b.dataset.c); } if(e.key==='Escape') sg.hidden = true; });
+document.addEventListener('click', e => { if(!e.target.closest('.search')) sg.hidden = true; });
+function pick(c){ const f = F.find(x => x.c === c); if(!f) return; show(f); q.value = f.n; sg.hidden = true; $('#file').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'nearest'}); }
+// bands
+const labs = J.dec_edges.map(([a,b],i) => i === 9 ? `Over ${money(a)}` : `${money(a)}–${money(b)}`);
+let cur = 9;
+function renderTab(){
+  $('#tabs').innerHTML = labs.map((l,i) => `<button type="button" aria-pressed="${i===cur}" data-i="${i}">${l}</button>`).join('');
+  const rows = F.filter(f => f.dec === cur+1).sort((a,b) => b.sp-a.sp || b.pct-a.pct).slice(0,10);
+  $('#tb').innerHTML = rows.map(f => `<tr data-c="${f.c}" tabindex="0"><td>${f.n}</td><td class="r num">${f.fy}</td><td class="r num">${money(f.at)}</td><td class="r num">${ord(Math.min(f.sp,99))}</td></tr>`).join('');
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; cur = +b.dataset.i; renderTab(); });
+$('#tb').addEventListener('click', e => { const r = e.target.closest('tr'); if(r) pick(+r.dataset.c); });
+$('#tb').addEventListener('keydown', e => { if(e.key==='Enter'){ const r = e.target.closest('tr'); if(r) pick(+r.dataset.c); } });
+renderTab();
+// facts
+$('#facts').innerHTML = [
+  [J.n.toLocaleString(), 'companies scored from their latest 10-K'],
+  ['0.67', 'average AUC, 2015–2020 (0.50 is chance)'],
+  ['22%', 'of later SEC cases fell in the top 10% of scores'],
+  ['170', 'misstated company-years used for training'],
+].map(([k,l]) => `<div class="fact"><div class="k">${k}</div><div class="l">${l}</div></div>`).join('');
+
+const start = F.find(f => f.n === 'Apple Inc') || F[0];
+show(start); q.value = '';
+</script>
